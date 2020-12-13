@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<body>
+<link rel="stylesheet" href="part1.css">
+
+<form>
+  <div>
+  <input id="lat" type="text" name="password" size="3"  maxlength="3" autofocus /> &#176;N</div>
+  <br>
+  <div>
+    <input id="lon" type="text" name="password2" size="3" maxlength="3" autofocus /> &#176;W</div>
+  <br>
+  <br>
+  <input type="button" value="Check" onclick="message();" />
+  <br>
+  <div id="display"><br><br><br></div>
+<a href="check_code_p2.html">
+<input type="button" id="buttonProceed" onclick="location.href='check_code_steve_p2.html" value="Proceed to Part 2"/>
+</a>
+</form>
+</body>
+<script>
+	    document.getElementById("buttonProceed").style.visibility='hidden';
+function message() {
+  var latVal = document.getElementById("lat").value ;
+  var latHash = hash(latVal);
+  var lonVal = document.getElementById("lon").value ;
+  var lonHash = hash(lonVal);
+  if (latHash == 193359060 && lonHash == 5859589) {
+    document.getElementById("display").innerText = "Correct! Open the Part 2 folder!\n\n\n";
+    document.getElementById("buttonProceed").style.visibility='visible';
+  } else {
+    document.getElementById("display").innerHTML = "You point to these coordinates on the map, but suddenly your gut tells you that can't be it. Back to the drawing board.";
+  }
+}
+
+ 
+// Restricts input for the given textbox to the given inputFilter.
+function setInputFilter(textbox, inputFilter) {
+  ["input", "keydown", "keyup", "mousedown", "mouseup", "select", "contextmenu", "drop"].forEach(function(event) {
+    textbox.addEventListener(event, function() {
+      if (inputFilter(this.value)) {
+        this.oldValue = this.value;
+        this.oldSelectionStart = this.selectionStart;
+        this.oldSelectionEnd = this.selectionEnd;
+      } else if (this.hasOwnProperty("oldValue")) {
+        this.value = this.oldValue;
+        this.setSelectionRange(this.oldSelectionStart, this.oldSelectionEnd);
+      } else {
+        this.value = "";
+      }
+    });
+  });
+}
+
+// Install input filters.
+setInputFilter(document.getElementById("lat"), function(value) {
+  return /^-?\d*$/.test(value); });
+
+// No cheating allowed
+function hash(str) {
+  str = str.toString();
+  
+  let result = 5381;
+  
+  for (let i = 0; i < str.length; i++) {
+    let c = str.charCodeAt(i);
+    result = ((result << 5) + result) ^ c;
+  }
+
+  return result;
+}
+</script>
+</html>

@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+    <link rel="stylesheet" href="part2.css">
+    <canvas id="snow-flake-app"></canvas>
+    <div id="keypad" class="btn-group-vertical ml-4 mt-4" role="group" aria-label="KeyPad">
+        <div class="btn-group">
+            <input class="text-center form-control-lg mb-2" id="code" maxlength="4">
+        </div><br>
+        <div class="btn-group" id="toprow">
+            <button type="button" class="btn btn-outline-secondary py-3" onclick="document.getElementById('code').value=document.getElementById('code').value + '1';">1</button>
+            <button type="button" class="btn btn-outline-secondary py-3" onclick="document.getElementById('code').value=document.getElementById('code').value + '2';">2</button>
+            <button type="button" class="btn btn-outline-secondary py-3" onclick="document.getElementById('code').value=document.getElementById('code').value + '3';">3</button>
+        </div>
+        <div class="btn-group">
+            <button type="button" class="btn btn-outline-secondary py-3" onclick="document.getElementById('code').value=document.getElementById('code').value + '4';">4</button>
+            <button type="button" class="btn btn-outline-secondary py-3" onclick="document.getElementById('code').value=document.getElementById('code').value + '5';">5</button>
+            <button type="button" class="btn btn-outline-secondary py-3" onclick="document.getElementById('code').value=document.getElementById('code').value + '6';">6</button>
+        </div>
+        <div class="btn-group">
+            <button type="button" class="btn btn-outline-secondary py-3" onclick="document.getElementById('code').value=document.getElementById('code').value + '7';">7</button>
+            <button type="button" class="btn btn-outline-secondary py-3" onclick="document.getElementById('code').value=document.getElementById('code').value + '8';">8</button>
+            <button type="button" class="btn btn-outline-secondary py-3" onclick="document.getElementById('code').value=document.getElementById('code').value + '9';">9</button>
+        </div>
+        <div class="btn-group">
+            <button type="button" class="btn btn-outline-secondary py-3" onclick="document.getElementById('code').value=document.getElementById('code').value + '0';">0</button>
+            <button type="button" class="btn btn-primary py-3" id="enterbutton" onclick="checkCode();">Enter</button>
+        </div>
+    </div>
+    <br>
+    <div id="display2"></div>
+    <br>
+    <a href="part3.html">
+        <input type="button" id="buttonProceed3" onclick="location.href='check_code_p3.html" value="Proceed to Part 3"/>
+        </a>
+<script>
+document.getElementById("buttonProceed3").style.visibility='hidden';
+
+//Here is configuration
+window.animation_config = {
+  generatorDelay : { min: 1, max:20 }, //in ms
+  speed : 1, //1x
+  x_axis_rate : 0.1, // x axis mobility
+  weight : 0.5, //snow flake weight
+  size : 1.5, //snow flake size
+  z_axis_rate : 0.05, //z axis mobility
+  color : {b : 255, a: 0.8}, //b for brightness, a for alpha, by default generates random colors but if you set brightness 255 then you'll see only white color
+  wind : 0 // value's sign determines wind direction.
+};
+
+(function(){
+    window.animation_config = window.animation_config || {
+        generatorDelay : { min: 1, max:20 },
+        isRunning : true,
+        speed : 1,
+        x_axis_rate : 0.1,
+        weight : 0.5,
+        size : 1.5,
+        z_axis_rate : 0.05,
+        color : {b : 255, a: 0.8},
+        wind : 0
+    };
+    window.animation_config.isRunning = true;
+    
+    let canvas = document.getElementById('snow-flake-app');
+    let ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const generatorDelay = { min: 1, max:1 };
+    let screenBounds = { lower: 0, upper: canvas.width};
+    
+    window.onfocus = function() {
+      //uncomment for performance
+      //window.animation_config.isRunning = true;
+    };
+    window.onblur = function() {
+      //uncomment for performance
+      //window.animation_config.isRunning = false;
+    };
+    
+    let particleArray = [];
+    
+    function randomInt(min = 0, max = 1){
+        return Math.floor(Math.random() * (max - min + 1) + min);
+    }
+    function randomFloat(min = 0, max = 1){
+        return (Math.random() * (max - min)) + min;  //Math.random() * (max - min + 1) + min;
+    }
+    function randomColor(brightness, alpha){
+        return 'rgba(' + randomInt(brightness,255) + ',' + randomInt(brightness,255) + ',' + randomInt(brightness,255) + ',' + alpha + ')';
+    }
+    
+    class Particle{
+        constructor(pos, vector, z_index, size, color, weight){
+            this.pos = pos;
+            this.vector = vector;
+            this.z_index = z_index%5;
+            this.color = color;
+            this.size = size%50;
+            this.weight = weight%50;
+        }
+        
+        get displaySize(){
+            return Math.sqrt(this.z_index*this.size) * window.animation_config.size;
+        }
+        
+        draw(){
+            if(this.death || !(this.pos.x >= 0 && this.pos.x <= canvas.width )) return;
+            ctx.beginPath();
+            ctx.arc(this.pos.x, this.pos.y, this.displaySize, 0, Math.PI*2);
+            ctx.fillStyle = this.color;
+            ctx.fill();
+        }
+        
+        update(){
+            this.vector.z += randomFloat(-0.1,0.1);
+            this.z_index += this.vector.z * window.animation_config.z_axis_rate;
+            if(this.z_index <= 0) this.z_index = Math.abs(this.z_index);
+            if(this.pos.y > canvas.height - this.displaySize || !(this.pos.x >= screenBounds.lower && this.pos.x <= screenBounds.upper ) || this.displaySize <= 0){
+                this.death = true;
+                return;
+            }
+            
+            this.vector.x += (randomFloat(-0.3, 0.3) * this.z_index) * window.animation_config.x_axis_rate;
+            this.vector.y = Math.sqrt(this.weight * this.size * this.z_index) * window.animation_config.speed;
+            
+            
+            this.pos.x += this.vector.x + window.animation_config.wind;
+            this.pos.y += this.vector.y;
+        }
+    }
+    
+    function init(){
+        particleArray = [];
+        
+        function generateRandomParticle(){
+            if(window.animation_config.isRunning){
+                if(window.animation_config.wind > 0) {
+                    screenBounds.lower = (window.animation_config.wind * 200) * -1;
+                    screenBounds.upper = canvas.width;
+                }
+                else if(window.animation_config.wind < 0) {
+                    screenBounds.lower = 0;
+                    screenBounds.upper = canvas.width + (window.animation_config.wind * -200);
+                }
+                let pos = { x: randomInt(screenBounds.lower, screenBounds.upper), y: 0 };
+                let vector = { x: randomFloat(-0.3,0.3), y: randomFloat(-5,5), z: randomFloat(-0.1,0.1)};
+                let s = randomFloat(0.1,5);
+                let z = randomFloat(0.2,5);
+                let c = randomColor(window.animation_config.color.b, window.animation_config.color.a);
+                let w = window.animation_config.weight;
+                particleArray.push(new Particle(pos,vector,z,s,c,w));
+            }
+            setTimeout(generateRandomParticle, randomInt(window.animation_config.generatorDelay.min, window.animation_config.generatorDelay.max));
+        }
+        
+        
+        generateRandomParticle();
+    }
+    
+    function animate(){
+        
+        if(window.animation_config.isRunning){
+            ctx.clearRect(0,0, canvas.width, canvas.height);
+            particleArray = particleArray.filter(particle => !particle.death);
+            for(let i = 0; i < particleArray.length; i++){
+                particleArray[i].update();
+                particleArray[i].draw();
+            }
+        }
+        requestAnimationFrame(animate);
+    }
+    
+    init();
+    animate();
+})();
+
+	function checkCode() {
+        var codeVal = document.getElementById("code").value;
+        var codeHash = hash(codeVal);
+		if (codeHash == 2085960002) {
+			document.getElementById("display2").innerHTML = "Correct! Open and read Part 3!"
+            document.getElementById("buttonProceed3").style.visibility='visible';
+		} else {
+			//document.getElementById("display2").innerHTML = "INCORRECT CODE. PLEASE TRY AGAIN"
+		    document.getElementById("code").value = "";
+		}
+	}
+
+    // Restricts input for the given textbox to the given inputFilter.
+function setInputFilter(textbox, inputFilter) {
+  ["input", "keydown", "keyup", "mousedown", "mouseup", "select", "contextmenu", "drop"].forEach(function(event) {
+    textbox.addEventListener(event, function() {
+      if (inputFilter(this.value)) {
+        this.oldValue = this.value;
+        this.oldSelectionStart = this.selectionStart;
+        this.oldSelectionEnd = this.selectionEnd;
+      } else if (this.hasOwnProperty("oldValue")) {
+        this.value = this.oldValue;
+        this.setSelectionRange(this.oldSelectionStart, this.oldSelectionEnd);
+      } else {
+        this.value = "";
+      }
+    });
+  });
+}
+
+// Install input filters.
+setInputFilter(document.getElementById("code"), function(value) {
+  return /^-?\d*$/.test(value); });
+
+function hash(str) {
+  str = str.toString();
+  
+  let result = 5381;
+  
+  for (let i = 0; i < str.length; i++) {
+    let c = str.charCodeAt(i);
+    result = ((result << 5) + result) ^ c;
+  }
+
+  return result;
+}
+</script>
+
+</html>
